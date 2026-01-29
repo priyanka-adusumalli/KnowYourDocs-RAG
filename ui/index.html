@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KnowYourDocs – RAG Q&A</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    input[type="file"],
+    textarea,
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #4338ca;
+    }
+    .response {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f1f5f9;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+    .status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📄 KnowYourDocs – RAG Q&A</h1>
+
+    <!-- Upload Section -->
+    <div class="section">
+      <label>Upload PDF / TXT Document</label>
+      <input type="file" id="fileInput" />
+      <button onclick="uploadFile()">Upload Document</button>
+      <div class="status" id="uploadStatus"></div>
+    </div>
+
+    <!-- Question Section -->
+    <div class="section">
+      <label>Ask a Question</label>
+      <textarea id="question" rows="4" placeholder="Enter your question..."></textarea>
+      <label>Top K Chunks</label>
+      <input type="number" id="topk" value="3" min="1" max="10" />
+      <button onclick="askQuestion()">Ask</button>
+      <div class="response" id="answer"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+
+    async function uploadFile() {
+      const fileInput = document.getElementById("fileInput");
+      const status = document.getElementById("uploadStatus");
+
+      if (!fileInput.files.length) {
+        status.textContent = "Please select a file.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      status.textContent = "Uploading and processing...";
+
+      try {
+        const response = await fetch(`${API_BASE}/upload/`, {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+        status.textContent = data.message;
+      } catch (error) {
+        status.textContent = "Upload failed.";
+      }
+    }
+
+    async function askQuestion() {
+      const question = document.getElementById("question").value;
+      const topk = document.getElementById("topk").value;
+      const answerDiv = document.getElementById("answer");
+
+      if (!question) {
+        answerDiv.textContent = "Please enter a question.";
+        return;
+      }
+
+      answerDiv.textContent = "Thinking...";
+
+      try {
+        const response = await fetch(`${API_BASE}/ask/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: question,
+            top_k: Number(topk)
+          })
+        });
+
+        const data = await response.json();
+        answerDiv.textContent = data.answer;
+      } catch (error) {
+        answerDiv.textContent = "Error getting answer.";
+      }
+    }
+  </script>
+</body>
+</html>
